@@ -3,26 +3,25 @@
 #define INCLUDE_TREE_H_
 #include <vector>
 class Tree {
- public:
+public:
     struct Node {
         char value;
-        std::vector<Node*> children;
-        Node(char v = '\0') : value(v) {}
+        std::vector<Node*> branches;
+        Node(char v = 0) : value(v) {}
     };
- private:
+private:
     Node* root;
-    std::vector<char> elems; 
-    void buildFrom(Node* parent, const std::vector<char>& remaining);
-    void clear(Node* node);
- public:
-    explicit Tree(const std::vector<char>& in);
+    std::vector<char> source;
+    Node* construct(const std::vector<char>& remaining);
+    void erase(Node* vertex);
+public:
+    explicit Tree(const std::vector<char>& input);
     ~Tree();
     Node* getRoot() const { return root; }
-    const std::vector<char>& getElems() const { return elems; }
+    const std::vector<char>& getSource() const { return source; }
 };
-
-std::vector<std::vector<char>> getAllPerms(Tree& tree);
-std::vector<char> getPerm1(Tree& tree, int num);
-std::vector<char> getPerm2(Tree& tree, int num);
+std::vector<std::vector<char>> getAllPerms(Tree& container);
+std::vector<char> getPerm1(Tree& container, int position);
+std::vector<char> getPerm2(Tree& container, int position);
 
 #endif  // INCLUDE_TREE_H_
