@@ -1,11 +1,10 @@
 // Copyright 2022 NNTU-CS
-#include "tree.h"
 #include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <random>
 #include <vector>
-
+#include "tree.h"
 static void printPerm(const std::vector<char>& p) {
     for (char c : p) std::cout << c;
     std::cout << "\n";
