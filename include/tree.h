@@ -2,20 +2,19 @@
 #ifndef INCLUDE_TREE_H_
 #define INCLUDE_TREE_H_
 #include <vector>
-
 class Tree {
-public:
+ public:
     struct Node {
         char value;
         std::vector<Node*> children;
         Node(char v = '\0') : value(v) {}
     };
-private:
+ private:
     Node* root;
     std::vector<char> elems; 
     void buildFrom(Node* parent, const std::vector<char>& remaining);
     void clear(Node* node);
-public:
+ public:
     explicit Tree(const std::vector<char>& in);
     ~Tree();
     Node* getRoot() const { return root; }
