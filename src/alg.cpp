@@ -1,107 +1,101 @@
 // Copyright 2022 NNTU-CS
 #include "tree.h"
 #include <algorithm>
-#include <stdexcept>
-#include <iostream>
-#include <fstream>
-#include <locale>
-#include <cstdlib>
-
-void Tree::buildFrom(Node* parent, const std::vector<char>& remaining) {
-    if (remaining.empty()) return;
-    for (size_t i = 0; i < remaining.size(); i++) {
-        char pick = remaining[i];
-        Node* child = new Node(pick);
-        parent->children.push_back(child);
-        std::vector<char> next;
-        next.reserve(remaining.size() - 1);
-        for (size_t j = 0; j < remaining.size(); j++) {
-            if (j == i) continue;
-            next.push_back(remaining[j]);
-        }
-        buildFrom(child, next);
+#include <vector>
+Tree::Tree(const std::vector<char>& input) : source(input) {
+    root = new Node(0);
+    std::vector<char> ordered = input;
+    std::sort(ordered.begin(), ordered.end());
+    for (char symbol : ordered) {
+        std::vector<char> remainder = ordered;
+        remainder.erase(std::find(remainder.begin(), remainder.end(), symbol));
+        Node* descendant = construct(remainder);
+        descendant->value = symbol;
+        root->branches.push_back(descendant);
     }
-}
-void Tree::clear(Node* node) {
-    if (!node) return;
-    for (Node* ch : node->children) {
-        clear(ch);
-    }
-    delete node;
-}
-Tree::Tree(const std::vector<char>& in) : root(new Node()), elems(in) {
-    std::sort(elems.begin(), elems.end());
-    buildFrom(root, elems);
 }
 Tree::~Tree() {
-    clear(root);
+    erase(root);
 }
-static void collectAll(Tree::Node* node,
-    std::vector<char>& current,
-    std::vector<std::vector<char>>& out) {
-    if (!node) return;
-    if (node->children.empty()) {
-        out.push_back(current);
+Tree::Node* Tree::construct(const std::vector<char>& remaining) {
+    Node* current = new Node(0);
+    if (remaining.empty()) return current;
+    std::vector<char> ordered = remaining;
+    std::sort(ordered.begin(), ordered.end());
+    for (char symbol : ordered) {
+        std::vector<char> remainder = ordered;
+        remainder.erase(std::find(remainder.begin(), remainder.end(), symbol));
+        Node* descendant = construct(remainder);
+        descendant->value = symbol;
+        current->branches.push_back(descendant);
+    }
+    return current;
+}
+void Tree::erase(Node* vertex) {
+    if (!vertex) return;
+    for (Tree::Node* child : vertex->branches) {
+        erase(child);
+    }
+    delete vertex;
+}
+static void depthWalk(Tree::Node* current,
+    std::vector<char>& buffer,
+    std::vector<std::vector<char>>& collection,
+    int depth, int maxDepth) {
+    if (depth == maxDepth) {
+        collection.push_back(buffer);
         return;
     }
-    for (Tree::Node* ch : node->children) {
-        current.push_back(ch->value);
-        collectAll(ch, current, out);
-        current.pop_back();
+    for (Tree::Node* next : current->branches) {
+        buffer.push_back(next->value);
+        depthWalk(next, buffer, collection, depth + 1, maxDepth);
+        buffer.pop_back();
     }
 }
-std::vector<std::vector<char>> getAllPerms(Tree& tree) {
-    std::vector<std::vector<char>> out;
-    std::vector<char> current;
-    if (tree.getElems().empty()) {
-        out.push_back(std::vector<char>{});
-        return out;
+std::vector<std::vector<char>> getAllPerms(Tree& container) {
+    std::vector<std::vector<char>> collection;
+    std::vector<char> buffer;
+    int totalCount = static_cast<int>(container.getSource().size());
+    for (Tree::Node* first : container.getRoot()->branches) {
+        buffer.push_back(first->value);
+        depthWalk(first, buffer, collection, 1, totalCount);
+        buffer.pop_back();
     }
-    collectAll(tree.getRoot(), current, out);
-    return out;
+    return collection;
 }
-
-std::vector<char> getPerm1(Tree& tree, int num) {
-    if (num <= 0) {
-        throw std::invalid_argument("num must be >= 1");
+size_t factorial(int number) {
+    if (number <= 1) return 1;
+    size_t result = 1;
+    for (int i = 2; i <= number; ++i) {
+        result *= i;
     }
-    auto perms = getAllPerms(tree);
-    if (num > (int)perms.size()) {
-        throw std::out_of_range("num is too large");
-    }
-    return perms[(size_t)num - 1];
+    return result;
 }
-static int countPerms(Tree::Node* node) {
-    if (!node) return 0;
-    if (node->children.empty()) return 1; 
-    int sum = 0;
-    for (Tree::Node* ch : node->children) {
-        sum += countPerms(ch);
+std::vector<char> getPerm1(Tree& container, int position) {
+    auto allPermutations = getAllPerms(container);
+    int total = static_cast<int>(allPermutations.size());
+    if (position <= 0 || position > total) {
+        return {};
     }
-    return sum;
+    return allPermutations[position - 1];
 }
-std::vector<char> getPerm2(Tree& tree, int num) {
-    if (num <= 0) {
-        throw std::invalid_argument("num must be >= 1");
+std::vector<char> getPerm2(Tree& container, int position) {
+    int total = static_cast<int>(container.getSource().size());
+    if (position <= 0 || static_cast<size_t>(position) > factorial(total)) {
+        return {};
     }
-    int total = countPerms(tree.getRoot());
-    if (num > total) {
-        throw std::out_of_range("num is too large");
-    }
-    Tree::Node* cur = tree.getRoot();
     std::vector<char> result;
-    while (!cur->children.empty()) {
-        for (size_t i = 0; i < cur->children.size(); i++) {
-            Tree::Node* ch = cur->children[i];
-            int cnt = countPerms(ch);
-            if (num > cnt) {
-                num -= cnt;
-            } else {
-                result.push_back(ch->value);
-                cur = ch;
-                break;
-            }
+    int remainder = position - 1;
+    Tree::Node* current = container.getRoot();
+    for (int step = 0; step < total; ++step) {
+        int blockSize = static_cast<int>(factorial(total - step - 1));
+        int index = remainder / blockSize;
+        remainder %= blockSize;
+        if (index >= static_cast<int>(current->branches.size())) {
+            return {};
         }
+        current = current->branches[index];
+        result.push_back(current->value);
     }
     return result;
 }
