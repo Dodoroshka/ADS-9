@@ -61,7 +61,8 @@ int main() {
         stop = std::chrono::high_resolution_clock::now();
         double timeP2 =
             std::chrono::duration<double, std::milli>(stop - start).count();
-        std::cout << n << "\t" << timeAll << "\t\t" << timeP1 << "\t\t" << timeP2
+        std::cout << n << "\t" << timeAll
+            << "\t\t" << timeP1 << "\t\t" << timeP2
             << "\n";
     }
     return 0;
