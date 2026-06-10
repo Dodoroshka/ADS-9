@@ -11,7 +11,6 @@ static void printPerm(const std::vector<char>& p) {
     std::cout << "\n";
 }
 
-
 static long long factorialLL(int n) {
     long long res = 1;
     for (int i = 2; i <= n; i++) res *= i;
@@ -26,23 +25,12 @@ static std::vector<char> makeAlphabet(int n) {
     return a;
 }
 
-template <typename Func>
-static double measureMs(Func fn) {
-    using namespace std::chrono;
-    auto start = high_resolution_clock::now();
-    fn();
-    auto stop = high_resolution_clock::now();
-    duration<double, std::milli> diff = stop - start;
-    return diff.count();
-}
-
 int main() {
     {
-        std::vector<char> in = { '1','2','3' };
+        std::vector<char> in = { '1','2','3','4' };
         Tree tree(in);
-
-        std::cout << "Demo for alphabet {1,2,3}\n";
-        std::cout << "All perms:\n";
+        std::cout << "Demo for alphabet {1,2,3,4}\n";
+        std::cout << "All permutations:\n";
         auto perms = getAllPerms(tree);
         for (size_t i = 0; i < perms.size(); i++) {
             std::cout << (i + 1) << ": ";
@@ -51,44 +39,33 @@ int main() {
         std::cout << "\n";
     }
 
-    std::cout << "Experiment: time vs alphabet size n\n";
-    std::cout << "Columns: n, num, time(getAllPerms), time(getPerm1), time(getPerm2)\n";
+    std::cout << "n\tgetAllPerms(ms)\tgetPerm1(ms)\tgetPerm2(ms)\n";
 
-
-    int nMin = 1;
-    int nMax = 9;
-
+    int nMin = 1, nMax = 8;
     std::mt19937 rng(12345);
 
     for (int n = nMin; n <= nMax; n++) {
-        std::vector<char> alphabet = makeAlphabet(n);
-        Tree tree(alphabet);
-
+        Tree tree(makeAlphabet(n));
         long long totalPerms = factorialLL(n);
-
         std::uniform_int_distribution<long long> dist(1, totalPerms);
         long long num = dist(rng);
 
-        double tAll = measureMs([&]() {
-            auto perms = getAllPerms(tree);
-            (void)perms; 
-            });
+        auto start = std::chrono::high_resolution_clock::now();
+        getAllPerms(tree);
+        auto stop = std::chrono::high_resolution_clock::now();
+        double timeAll = std::chrono::duration<double, std::milli>(stop - start).count();
 
-        double tPerm1 = measureMs([&]() {
-            auto p = getPerm1(tree, (int)num);
-            (void)p;
-            });
+        start = std::chrono::high_resolution_clock::now();
+        getPerm1(tree, num);
+        stop = std::chrono::high_resolution_clock::now();
+        double timeP1 = std::chrono::duration<double, std::milli>(stop - start).count();
 
-        double tPerm2 = measureMs([&]() {
-            auto p = getPerm2(tree, (int)num);
-            (void)p;
-            });
-
-        std::cout << n << ", " << num << ", "
-            << tAll << " ms, "
-            << tPerm1 << " ms, "
-            << tPerm2 << " ms\n";
+        start = std::chrono::high_resolution_clock::now();
+        getPerm2(tree, num);
+        stop = std::chrono::high_resolution_clock::now();
+        double timeP2 = std::chrono::duration<double, std::milli>(stop - start).count();
+        
+        std::cout << n << "\t" << timeAll << "\t\t" << timeP1 << "\t\t" << timeP2 << "\n";
     }
-
     return 0;
 }
